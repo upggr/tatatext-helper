@@ -1,3 +1,5 @@
 dist/
 tatatext-helper-test
 *.tmp
+yt-dlp-mac
+yt-dlp-win.exe

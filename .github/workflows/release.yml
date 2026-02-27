@@ -1,0 +1,60 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Download yt-dlp binaries
+        run: |
+          curl -L -o yt-dlp-mac "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
+          curl -L -o yt-dlp-win.exe "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
+          chmod +x yt-dlp-mac
+
+      - name: Build Mac arm64
+        run: GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/tatatext-helper-mac-arm64 .
+        env:
+          CGO_ENABLED: 0
+
+      - name: Build Mac amd64
+        run: GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/tatatext-helper-mac-amd64 .
+        env:
+          CGO_ENABLED: 0
+
+      - name: Build Windows
+        run: GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/tatatext-helper-windows.exe .
+        env:
+          CGO_ENABLED: 0
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || 'v1.0.0' }}
+          name: tatatext Helper ${{ github.ref_name || 'v1.0.0' }}
+          body: |
+            ## tatatext Helper
+
+            Download the app for your platform, double-click to run, and YouTube transcription will be enabled on tatatext.com.
+
+            | Platform | File |
+            |----------|------|
+            | Mac (Apple Silicon M1/M2/M3) | `tatatext-helper-mac-arm64` |
+            | Mac (Intel) | `tatatext-helper-mac-amd64` |
+            | Windows | `tatatext-helper-windows.exe` |
+
+            **Mac:** After downloading, right-click → Open (to bypass Gatekeeper the first time).
+          files: |
+            dist/tatatext-helper-mac-arm64
+            dist/tatatext-helper-mac-amd64
+            dist/tatatext-helper-windows.exe
